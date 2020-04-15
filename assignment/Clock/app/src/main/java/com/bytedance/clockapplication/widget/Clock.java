@@ -1,15 +1,21 @@
 package com.bytedance.clockapplication.widget;
 
+import android.app.Notification;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Handler;
+import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.logging.LogRecord;
 
 public class Clock extends View {
 
@@ -34,13 +40,26 @@ public class Clock extends View {
     private float HOUR_POINTER_LENGTH;// 指针长度
     private float MINUTE_POINTER_LENGTH;
     private float SECOND_POINTER_LENGTH;
-    private float UNIT_DEGREE = (float) (6 * Math.PI / 180);// 一个小格的度数
+    private float UNIT_DEGREE = (float) (6 * Math.PI / 180);// 一个小格的度数（弧度）
 
     private int mWidth, mCenterX, mCenterY, mRadius;
 
     private int degreesColor;
 
     private Paint mNeedlePaint;
+
+    private final int MSG_UPDATE=0;
+
+    Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg){
+            super.handleMessage(msg);
+            if(msg.what == MSG_UPDATE) {
+                invalidate();
+//                handler.sendEmptyMessageDelayed(MSG_UPDATE,1000);//启动后，每秒向自己发出消息
+            }
+        }
+    };
 
     public Clock(Context context) {
         super(context);
@@ -84,6 +103,8 @@ public class Clock extends View {
         mNeedlePaint.setStyle(Paint.Style.FILL_AND_STROKE);
         mNeedlePaint.setStrokeCap(Paint.Cap.ROUND);
 
+        handler.sendEmptyMessage(MSG_UPDATE);//启动handler
+
     }
 
     @Override
@@ -106,6 +127,7 @@ public class Clock extends View {
         drawNeedles(canvas);
 
         // todo 每一秒刷新一次，让指针动起来
+        handler.sendEmptyMessageDelayed(MSG_UPDATE,1000);//启动后，每秒向自己发出消息
 
     }
 
@@ -167,10 +189,12 @@ public class Clock extends View {
         drawPointer(canvas, 2, nowSeconds);
         // 画分针
         // todo 画分针
+        drawPointer(canvas,1, nowMinutes);
         // 画时针
         int part = nowMinutes / 12;
         drawPointer(canvas, 0, 5 * nowHours + part);
 
+        Log.d(TAG,"Time:" + nowHours + ":" + nowMinutes + ":" + nowSeconds);
 
     }
 
@@ -189,6 +213,9 @@ public class Clock extends View {
                 break;
             case 1:
                 // todo 画分针，设置分针的颜色
+                degree = value * UNIT_DEGREE;
+                mNeedlePaint.setColor(Color.BLUE);
+                pointerHeadXY = getPointerHeadXY(MINUTE_POINTER_LENGTH, degree);
 
                 break;
             case 2:
